@@ -8,6 +8,7 @@ import (
 
 	coreTypes "github.com/quinlanmorake/verisart-go/types/core"
 
+	authentication "github.com/quinlanmorake/verisart-go/authentication"	
 	config "github.com/quinlanmorake/verisart-go/config"
 	database "github.com/quinlanmorake/verisart-go/database"
 
@@ -28,6 +29,10 @@ func main() {
 		log.Fatalf("%#v \n", initializeDbResult)
 	}
 
+	if initializeAuthResult := authentication.Init(config.AppConfig); initializeAuthResult.IsNotOk() {
+		log.Fatalf("%#v \n", initializeAuthResult)
+	}
+	
 	/*
 	   It is not an overly complicated thing to create one's own router and minimize
 	   the dependency on other libraries; in this case there would have been a little
@@ -40,14 +45,19 @@ func main() {
 	router.Use(middleware.CORS)
 	router.Use(middleware.ContentType)
 
-	router.HandleFunc("/certificates", createHandlers.HandleHttpRequest).Methods(coreTypes.HTTP_POST)
-	router.HandleFunc("/certificates/{certificateId}", updateHandlers.HandleHttpRequest).Methods(coreTypes.HTTP_PUT)
-	router.HandleFunc("/certificates/{certificateId}", deleteHandlers.HandleHttpRequest).Methods(coreTypes.HTTP_DELETE)
+	userRoutes := router.PathPrefix("/users").Subrouter()
+	userRoutes.Use(middleware.Authentication)
+	userRoutes.HandleFunc("/{userId}/certificates", listHandlers.HandleHttpRequest).Methods(coreTypes.HTTP_GET)
+	
+	certificateRoutes := router.PathPrefix("/certificates").Subrouter()
+	certificateRoutes.Use(middleware.Authentication)
 
-	router.HandleFunc("/users/{userId}/certificates", listHandlers.HandleHttpRequest).Methods(coreTypes.HTTP_GET)
+	certificateRoutes.HandleFunc("/", createHandlers.HandleHttpRequest).Methods(coreTypes.HTTP_POST)
+	certificateRoutes.HandleFunc("/{certificateId}", updateHandlers.HandleHttpRequest).Methods(coreTypes.HTTP_PUT)
+	certificateRoutes.HandleFunc("/{certificateId}", deleteHandlers.HandleHttpRequest).Methods(coreTypes.HTTP_DELETE)
 
-	router.HandleFunc("/certificates/{certificateId}/transfers", transferHandlers.HandleCreateTransferHttpRequest).Methods(coreTypes.HTTP_POST)
-	router.HandleFunc("/certificates/{certificateId}/transfers", transferHandlers.HandleAcceptTransferHttpRequest).Methods(coreTypes.HTTP_PUT)
+	certificateRoutes.HandleFunc("/{certificateId}/transfers", transferHandlers.HandleCreateTransferHttpRequest).Methods(coreTypes.HTTP_POST)
+	certificateRoutes.HandleFunc("/{certificateId}/transfers", transferHandlers.HandleAcceptTransferHttpRequest).Methods(coreTypes.HTTP_PUT)
 
 	http.Handle("/", router)
 

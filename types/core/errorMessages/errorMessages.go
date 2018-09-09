@@ -5,6 +5,10 @@ import (
 )
 
 var ErrorMessages = map[errorCodes.ErrorCode]ErrorMessage{
+	errorCodes.JWT_TOKEN_HAS_INVALID_ISSUER: ErrorMessage("The token has an invalid issuer"),
+	errorCodes.JWT_TOKEN_HAS_EXPIRED: ErrorMessage("The JWT token has expired"),
+	errorCodes.JWT_AUTHORIZATION_HEADER_WAS_NOT_SET: ErrorMessage("No value was provided in the Authorization header"),
+	
 	errorCodes.USER_ID_IS_INVALID:            ErrorMessage("The id on the provided user is not valid"),
 	errorCodes.EMAIL_IS_INVALID:              ErrorMessage("The given email address is not a valid email address"),
 	errorCodes.NO_USER_WITH_THE_EMAIL_EXISTS: ErrorMessage("No user with the given email address could be found"),

@@ -15,5 +15,9 @@
   "logging": {
     "logRequests": true,
     "logResponses": true
+  },
+
+  "jwt": {
+    "issuer": "Verisart"
   }
 }

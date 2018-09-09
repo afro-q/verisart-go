@@ -13,10 +13,11 @@ import (
 )
 
 type Config struct {
-	Server   server           `json:"server"`
 	Cors     cors             `json:"cors"`
-	Logging  logging          `json:"logging"`
 	Database coreTypes.String `json:"database"`
+	Jwt jwt `json:"jwt"`	
+	Logging  logging          `json:"logging"`
+	Server   server           `json:"server"`	
 }
 
 const CONFIG_FILE_NAME = "app.config"

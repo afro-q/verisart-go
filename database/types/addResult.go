@@ -10,6 +10,12 @@ type AddResult struct {
 	NewEntryId coreTypes.String `json:"id"`
 }
 
+func NewAddResult(result coreTypes.Result) AddResult {
+	return AddResult {
+		Result: result,
+	}
+}
+
 /*
  Whether or not an add operation succeeded depends on whether or not there was an error,
  and whether or not we have a valid id for the element added.

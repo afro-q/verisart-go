@@ -1,14 +1,6 @@
 package types
 
-/*
- We are going to lean on the Go Marhsaller interface for the implementation of database applicable types.
-
- In the future, as applicable, one could develop one's own interface, implemented by types able to be saved to / read from, the database
-*/
-
 import (
-	"encoding/json"
-
 	coreTypes "github.com/quinlanmorake/verisart-go/types/core"
 )
 
@@ -18,7 +10,7 @@ type Init interface {
 }
 
 type Adder interface {
-	Add(json.Marshaler) AddResult
+	Add(DbRecord) AddResult
 }
 
 type Updater interface {
@@ -26,7 +18,7 @@ type Updater interface {
 	   We are not adding extra work by implementing a comparer and updating only required entries,
 	   the currently logic is going to update the entire object with the provided one
 	*/
-	Update(coreTypes.String, json.Marshaler) UpdateResult
+	Update(DbRecord) coreTypes.Result
 }
 
 /*
@@ -34,15 +26,18 @@ type Updater interface {
  As such, if not exactly 1 is not deleted, there will be a failure
 */
 type Deleter interface {
-	Delete(coreTypes.String) coreTypes.Result
+	Delete(DbRecord) coreTypes.Result
 }
 
 /*
   We load data by calling load, the running the closure giving it the provided data.
   Load as such can fail at 2 points, either by the database code, trying to load, or by the provided closure.
+
+  More importantly, being that this is an in-memory store anyway, we don't bother with filtering within the db layer.
+  When this moves to a db, a filtering mechansim will have to be added in.  
 */
 type Loader interface {
-	Load(DataHandler) coreTypes.Result
+	Load(string, DataHandler) coreTypes.Result
 }
 
 type Database interface {

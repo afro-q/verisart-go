@@ -8,6 +8,9 @@ package errorCodes
  Consumers of the api would be looking at the docs for this information
 */
 
+// This is used in unit tests when we need to return a failure but don't care about the error
+const UNIT_TEST_GENERIC_FAILURE = -1
+
 const (
 	// 1 - 10
 	USER_ID_IS_INVALID ErrorCode = iota + 1
@@ -24,7 +27,17 @@ const (
 	DATABASE_NOT_INITIALIZED
 
 	DATABASE_ADD_DID_NOT_RETURN_AN_ID
+	DATABASE_ADD_OBJECT_ALREADY_HAS_AN_ID
+	DATABASE_ADD_FAILED
+	
+	DATABASE_LOAD_FAILED
 
+	DATABASE_UPDATE_NO_ID_WAS_PROVIDED
+	DATABASE_UPDATE_FAILED
+
+	DATABASE_DELETE_NO_ID_WAS_PROVIDED	
+	DATABASE_DELETE_FAILED
+	
 	CONFIG_INIT_COULD_NOT_GET_CURRENT_EXE_PATH
 	CONFIG_INIT_SYMBOL_LINK_ERROR
 	CONFIG_INIT_COULD_NOT_FIND_CONFIG_FILE

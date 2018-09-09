@@ -12,5 +12,9 @@ var ErrorMessages = map[errorCodes.ErrorCode]ErrorMessage{
 	errorCodes.INVALID_DATABASE_CONFIG:           ErrorMessage("The database element in the config valid is invalid, it is either empty, or is not a valid database type"),
 	errorCodes.DATABASE_INIT_ERROR:               ErrorMessage("An error occured initializing the database"),
 	errorCodes.DATABASE_NOT_INITIALIZED:          ErrorMessage("An operation is being attempted against a database that is not initialized"),
+
+	errorCodes.DATABASE_ADD_OBJECT_ALREADY_HAS_AN_ID: ErrorMessage("The record provided to be added to the database already has an id"),
 	errorCodes.DATABASE_ADD_DID_NOT_RETURN_AN_ID: ErrorMessage("On adding an object to the database, no id was generated it"),
+
+	errorCodes.DATABASE_UPDATE_NO_ID_WAS_PROVIDED: ErrorMessage("An empty id was provided to the update database method"),
 }

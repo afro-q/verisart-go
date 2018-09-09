@@ -1,0 +1,19 @@
+{
+  "server": {
+    "address": "0.0.0.0",
+    "port": 55555
+  },
+
+  "cors": {
+    "allowMethods": "POST, GET, OPTIONS, PUT, DELETE",
+    "allowOrigin": "*",
+	  "allowHeaders": "X-Requested-With, Accept, Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization"    
+  },
+
+  "database": "Memory",
+  
+  "logging": {
+    "logRequests": true,
+    "logResponses": true
+  }
+}

@@ -24,4 +24,17 @@ var ErrorMessages = map[errorCodes.ErrorCode]ErrorMessage{
 	errorCodes.DATABASE_UPDATE_NO_ID_WAS_PROVIDED: ErrorMessage("An empty id was provided to the update database method"),
 
 	errorCodes.ERROR_UNMARSHALING_USER_RECORD_FROM_DATABASE: ErrorMessage("An error occurred attempting to load a user reocrd from the database"),
+
+	errorCodes.CERTIFICATE_MISSING_TITLE: ErrorMessage("No title was provided when creating or updating the certificate"),
+	errorCodes.CERTIFICATE_HAS_INVALID_YEAR: ErrorMessage("The year on the certificate must have a value greater that '2000'"),
+	errorCodes.ERROR_UNMARSHALING_CERTIFICATE_RECORD_FROM_DATABASE: ErrorMessage("An error occurred attempting to load a certificate record from the database"),
+	errorCodes.NO_CERTIFICATE_WITH_THE_GIVEN_ID_COULD_BE_FOUND: ErrorMessage("The provided id does not match any certificate in the database"),
+	errorCodes.INSUFFICIENT_PERMISSIONS_TO_MODIFY_THE_REQUESTED_CERTIFICATE: ErrorMessage("You do not have enough permission to modify the certicate - it belongs to another user"),
+	errorCodes.CERTIFICATE_ID_IS_INVALID: ErrorMessage("An invalid id was provided as the certificate id parameter"),
+
+	errorCodes.CERTIFICATE_ALREADY_HAS_PENDING_TRANSFER: ErrorMessage("The certificate already has a pending transfer"),
+	errorCodes.ERROR_UNMARSHALING_TRANSFER_RECORD_FROM_DATABASE: ErrorMessage("An error occured attempting to load a transfer record from the database"),
+	errorCodes.NO_TRANSFER_FOR_THE_GIVEN_CERTIFICATE_ID_COULD_BE_FOUND: ErrorMessage("No transfer corresponding to the certificate id could be found"),
+	errorCodes.UNABLE_TO_TRANSFER_TO_YOURSELF: ErrorMessage("The receiver of the transfer must be different to the sender"),
+	errorCodes.INSUFFICIENT_PERMISSION_TO_ACCEPT_THE_TRANSFER: ErrorMessage("You do not have enough permission to accept the certificate - it is destined for a user with a different email address"),
 }

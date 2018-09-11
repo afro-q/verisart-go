@@ -1,15 +1,7 @@
 package types
 
-type EmailAddress string
+type EmailAddress String
 
-/* type EmailAddressInvalidFormat error
-type EmailAddressMissing error
-
-func NewEmailAddressMissing() error {
-	return EmailAddressMissing(errors.New("Email adress can not be empty."))
+func (e EmailAddress) IsEqual(compareTo EmailAddress) bool {
+	return String(e).IsEqual(String(compareTo))
 }
-
-func NewEmailAddressInvalidFormat(msg string) error {
-	return EmailAddressInvalidFormat(errors.New("Email error:" + msg + "."))
-}
-*/

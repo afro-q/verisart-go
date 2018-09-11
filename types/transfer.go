@@ -3,6 +3,9 @@ package types
 import (
 	coreTypes "github.com/quinlanmorake/verisart-go/types/core"
 	errorCodes "github.com/quinlanmorake/verisart-go/types/core/errorCodes"
+
+	tableNames "github.com/quinlanmorake/verisart-go/database/types/tableNames"		
+	transferStatus "github.com/quinlanmorake/verisart-go/types/transferStatus"	
 )
 
 /*
@@ -16,19 +19,24 @@ import (
 type Transfer struct {
 	ActionedOn coreTypes.IsoTimeString `json:"actionedOn"`
 
+	CertificateId coreTypes.String `json:"certificateId"`
 	CreatedAt coreTypes.IsoTimeString `json:"createdAt"`
 	CreatedBy coreTypes.UserId        `json:"createdBy"`
 
 	Id coreTypes.String `json:"id"`
 
-	Status TransferStatus `json:"status"`
+	Status transferStatus.TransferStatus `json:"status"`
 
 	To coreTypes.EmailAddress `json:"to"`
 }
 
-func NewTransfer() Transfer {
+func NewTransfer(userId coreTypes.UserId, certificateId coreTypes.String, to coreTypes.EmailAddress) Transfer {
 	return Transfer{
+		CertificateId: certificateId,
 		CreatedAt: coreTypes.GenerateTimestamp(),
+		CreatedBy: userId,
+		Status: transferStatus.CREATED,
+		To: to,
 	}
 }
 
@@ -45,4 +53,20 @@ func (t Transfer) IsValid() coreTypes.Result {
 	}
 
 	return coreTypes.NewSuccessResult()
+}
+
+func NewEmptyTransfer() Transfer {
+	return Transfer{}
+}
+
+func (t *Transfer) GetId() coreTypes.String {
+	return t.Id
+}
+
+func (t *Transfer) SetId(id coreTypes.String) {
+	t.Id = id
+}
+
+func (t *Transfer) GetTableName() coreTypes.String {
+	return coreTypes.String(tableNames.TRANSFERS)
 }

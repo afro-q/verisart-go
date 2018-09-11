@@ -24,6 +24,9 @@ func (s String) Length() int {
 	return len(strings.TrimSpace(s.ToString()))
 }
 
+func (s String) IsEqual(compareTo String) bool {
+	return (strings.Compare(s.ToLowercaseString(), compareTo.ToLowercaseString()) == 0)
+}
 func (s String) MarshalJSON() ([]byte, error) {
 	return json.Marshal(s.ToString())
 }

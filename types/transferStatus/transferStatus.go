@@ -1,20 +1,16 @@
 package transferStatus
 
-import (
-	coreTypes "github.com/quinlanmorake/verisart-go/types"
-)
-
 /*
  We put these in a subpackage so as to make it clearer to use them in the code; that is, the intended use is
   a := transferStatus.CREATED
 */
 
+type TransferStatus string
+
 const (
-	CREATED  coreTypes.TransferStatus = "CREATED"
-	FAILED   coreTypes.TransferStatus = "FAILED"
-	WAITING  coreTypes.TransferStatus = "WAITING"
-	ACCEPTED coreTypes.TransferStatus = "ACCEPTED"
-	ANNULED  coreTypes.TransferStatus = "ANNULED"
+	CREATED  TransferStatus = "CREATED"
+	ACCEPTED TransferStatus = "ACCEPTED"
+	ANNULED  TransferStatus = "ANNULED"
 )
 
 /*

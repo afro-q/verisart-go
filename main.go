@@ -12,15 +12,10 @@ import (
 	config "github.com/quinlanmorake/verisart-go/config"
 	database "github.com/quinlanmorake/verisart-go/database"
 	users "github.com/quinlanmorake/verisart-go/user"
-
-	userHttpHandlers "github.com/quinlanmorake/verisart-go/user/handlers/http"
-
-	createHandlers "github.com/quinlanmorake/verisart-go/create/handlers"
-	deleteHandlers "github.com/quinlanmorake/verisart-go/delete/handlers"
-	listHandlers "github.com/quinlanmorake/verisart-go/list/handlers"
 	middleware "github.com/quinlanmorake/verisart-go/middleware"
-	transferHandlers "github.com/quinlanmorake/verisart-go/transfer/handlers"
-	updateHandlers "github.com/quinlanmorake/verisart-go/update/handlers"
+	
+	userHttpHandlers "github.com/quinlanmorake/verisart-go/user/handlers/http"
+	certifcateHttpHandlers "github.com/quinlanmorake/verisart-go/certificate/handlers/http"
 )
 
 func main() {
@@ -57,19 +52,20 @@ func main() {
 	router.HandleFunc("/users", userHttpHandlers.LoadAllUsers).Methods(coreTypes.HTTP_GET)
 	router.HandleFunc("/users/{userId}/token", userHttpHandlers.GenerateToken).Methods(coreTypes.HTTP_GET)
 
+	// Authentication onwards
 	userSubRoutes := router.PathPrefix("/users/{userId}/certificats").Subrouter()
 	userSubRoutes.Use(middleware.Authentication)
-	userSubRoutes.HandleFunc("/", listHandlers.HandleHttpRequest).Methods(coreTypes.HTTP_GET)
+	userSubRoutes.HandleFunc("/", certifcateHttpHandlers.LoadCertificatesForUser).Methods(coreTypes.HTTP_GET) // Load all certificates for user
 
 	certificateRoutes := router.PathPrefix("/certificates").Subrouter()
 	certificateRoutes.Use(middleware.Authentication)
 
-	certificateRoutes.HandleFunc("/", createHandlers.HandleHttpRequest).Methods(coreTypes.HTTP_POST)
-	certificateRoutes.HandleFunc("/{certificateId}", updateHandlers.HandleHttpRequest).Methods(coreTypes.HTTP_PUT)
-	certificateRoutes.HandleFunc("/{certificateId}", deleteHandlers.HandleHttpRequest).Methods(coreTypes.HTTP_DELETE)
+	certificateRoutes.HandleFunc("/", certifcateHttpHandlers.Create).Methods(coreTypes.HTTP_POST) // Create a certificate
+	certificateRoutes.HandleFunc("/{certificateId}", certifcateHttpHandlers.Update).Methods(coreTypes.HTTP_PUT) // Update a certificate
+	certificateRoutes.HandleFunc("/{certificateId}", certifcateHttpHandlers.Delete).Methods(coreTypes.HTTP_DELETE) // Delete a certificate
 
-	certificateRoutes.HandleFunc("/{certificateId}/transfers", transferHandlers.HandleCreateTransferHttpRequest).Methods(coreTypes.HTTP_POST)
-	certificateRoutes.HandleFunc("/{certificateId}/transfers", transferHandlers.HandleAcceptTransferHttpRequest).Methods(coreTypes.HTTP_PUT)
+	certificateRoutes.HandleFunc("/{certificateId}/transfers", certifcateHttpHandlers.CreateTransfer).Methods(coreTypes.HTTP_POST) // Create a transfer
+	certificateRoutes.HandleFunc("/{certificateId}/transfers", certifcateHttpHandlers.AcceptTransfer).Methods(coreTypes.HTTP_PUT)  // Accept a transfer
 
 	http.Handle("/", router)
 

@@ -1,7 +1,7 @@
 package types
 
 import (
-	coreTypes "github.com/quinlanmorake/verisart-go/types/core"	
+	coreTypes "github.com/quinlanmorake/verisart-go/types/core"
 	errorCodes "github.com/quinlanmorake/verisart-go/types/core/errorCodes"
 )
 

@@ -8,7 +8,7 @@ import (
 
 type server struct {
 	Address coreTypes.String `json:"address"`
-	Port    int    `json:"port"`
+	Port    int              `json:"port"`
 }
 
 func (s server) GetListenAddress() string {

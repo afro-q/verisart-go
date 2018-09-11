@@ -5,7 +5,7 @@ import (
 
 	coreTypes "github.com/quinlanmorake/verisart-go/types/core"
 	errorCodes "github.com/quinlanmorake/verisart-go/types/core/errorCodes"
-	
+
 	businessTypes "github.com/quinlanmorake/verisart-go/types"
 )
 
@@ -16,5 +16,5 @@ func GetUserFromTokenInHeaders(r *http.Request) (businessTypes.User, coreTypes.R
 		return businessTypes.User{}, coreTypes.NewResultFromErrorCode(errorCodes.JWT_AUTHORIZATION_HEADER_WAS_NOT_SET)
 	} else {
 		return ParseToken(tokenFromHeader)
-	}	
+	}
 }

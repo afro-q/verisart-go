@@ -3,11 +3,11 @@ package authentication
 import (
 	"crypto/rsa"
 	joseRsa "github.com/dvsekhvalnov/jose2go/keys/rsa"
-	
+
 	coreTypes "github.com/quinlanmorake/verisart-go/types/core"
 
 	errorCodes "github.com/quinlanmorake/verisart-go/types/core/errorCodes"
-	errorMessages "github.com/quinlanmorake/verisart-go/types/core/errorMessages"	
+	errorMessages "github.com/quinlanmorake/verisart-go/types/core/errorMessages"
 
 	config "github.com/quinlanmorake/verisart-go/config"
 )
@@ -21,7 +21,7 @@ func Init(config config.Config) coreTypes.Result {
 
 	if _privateKey, readPrivateKeyError := joseRsa.ReadPrivate([]byte(privateKeyString)); readPrivateKeyError != nil {
 		return coreTypes.Result{
-			Code: errorCodes.JWT_ERROR_PARSING_THE_PRIVATE_KEY,
+			Code:    errorCodes.JWT_ERROR_PARSING_THE_PRIVATE_KEY,
 			Message: errorMessages.ErrorMessage(readPrivateKeyError.Error()),
 		}
 	} else {
@@ -30,13 +30,13 @@ func Init(config config.Config) coreTypes.Result {
 
 	if _publicKey, readPublicKeyError := joseRsa.ReadPublic([]byte(publicKeyString)); readPublicKeyError != nil {
 		return coreTypes.Result{
-			Code: errorCodes.JWT_ERROR_PARSING_THE_PUBLIC_KEY,
+			Code:    errorCodes.JWT_ERROR_PARSING_THE_PUBLIC_KEY,
 			Message: errorMessages.ErrorMessage(readPublicKeyError.Error()),
 		}
 	} else {
 		publicKey = _publicKey
 	}
-	
+
 	return coreTypes.NewSuccessResult()
 }
 
@@ -67,8 +67,8 @@ lJv2CrsCgYEAnT4c40rr0SHRROzu6OZC7wD/YnpUh69uHZm99+fXtp3lxNPL5Rq0
 b8HEc5I412pMTLrymVNzhVRX1GVO13p0rLp0ZF8ey1cwDrM+fnZ8gL+fsWM/9tZO
 GFzkS+A0nwWtV3OgIenro84QX7IsBwRleFzVrGMbH6e1kZf3mYrCuNk=
 -----END RSA PRIVATE KEY-----`
-var privateKey *rsa.PrivateKey
 
+var privateKey *rsa.PrivateKey
 
 const publicKeyString = `-----BEGIN PUBLIC KEY-----
 MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAy2CSgMl19a9ayokp5aU1
@@ -79,4 +79,5 @@ RqgFwywXQ56D6TZO3POzL+JgBEJY5JZTd031Qdd9YV3iess4iroyp04nthx0hMoH
 vrO2WQmTDi+bXN7OQT6Eh5cpCkUzNlhoDl1tsvLOu2Hsjj678ubxBMhXjRxGBEGV
 /wIDAQAB
 -----END PUBLIC KEY-----`
+
 var publicKey *rsa.PublicKey

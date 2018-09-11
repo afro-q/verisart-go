@@ -5,22 +5,22 @@ import (
 	"testing"
 
 	coreTypes "github.com/quinlanmorake/verisart-go/types/core"
-	errorCodes "github.com/quinlanmorake/verisart-go/types/core/errorCodes"	
-	
+	errorCodes "github.com/quinlanmorake/verisart-go/types/core/errorCodes"
+
 	dbTypes "github.com/quinlanmorake/verisart-go/database/types"
-	tableNames "github.com/quinlanmorake/verisart-go/database/types/tableNames"	
+	tableNames "github.com/quinlanmorake/verisart-go/database/types/tableNames"
 )
 
 func Load_Works(db MemoryDb, t *testing.T) {
-	resultHandler := dbTypes.DataHandler(func (dbRows [][]byte) coreTypes.Result {
+	resultHandler := dbTypes.DataHandler(func(dbRows [][]byte) coreTypes.Result {
 		// Check we have data
 		if len(dbRows) == 0 {
 			t.Error("No rows were loaded from the database")
-			return coreTypes.Result {
+			return coreTypes.Result{
 				Code: errorCodes.UNIT_TEST_GENERIC_FAILURE,
 			}
 		}
-		
+
 		usersInDb := make([]UserTestingObject, len(dbRows))
 
 		// Check the data can marshal
@@ -39,7 +39,7 @@ func Load_Works(db MemoryDb, t *testing.T) {
 		for _, user := range usersInDb {
 			if user.Id.Length() == 0 {
 				t.Error("A user was found with no id")
-				return coreTypes.Result {
+				return coreTypes.Result{
 					Code: errorCodes.UNIT_TEST_GENERIC_FAILURE,
 				}
 			}

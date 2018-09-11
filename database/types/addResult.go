@@ -11,7 +11,7 @@ type AddResult struct {
 }
 
 func NewAddResult(result coreTypes.Result) AddResult {
-	return AddResult {
+	return AddResult{
 		Result: result,
 	}
 }

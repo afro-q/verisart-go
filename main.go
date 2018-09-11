@@ -8,9 +8,12 @@ import (
 
 	coreTypes "github.com/quinlanmorake/verisart-go/types/core"
 
-	authentication "github.com/quinlanmorake/verisart-go/authentication"	
+	authentication "github.com/quinlanmorake/verisart-go/authentication"
 	config "github.com/quinlanmorake/verisart-go/config"
 	database "github.com/quinlanmorake/verisart-go/database"
+	users "github.com/quinlanmorake/verisart-go/user"
+
+	userHttpHandlers "github.com/quinlanmorake/verisart-go/user/handlers/http"
 
 	createHandlers "github.com/quinlanmorake/verisart-go/create/handlers"
 	deleteHandlers "github.com/quinlanmorake/verisart-go/delete/handlers"
@@ -22,17 +25,22 @@ import (
 
 func main() {
 	if loadConfigResult := config.LoadConfig(); loadConfigResult.IsNotOk() {
-		log.Fatalf("%#v \n", loadConfigResult) // I want to print out the whole message
+		handleInitializeError(loadConfigResult)
 	}
 
 	if initializeDbResult := database.Init(config.AppConfig); initializeDbResult.IsNotOk() {
-		log.Fatalf("%#v \n", initializeDbResult)
+		handleInitializeError(initializeDbResult)
 	}
 
 	if initializeAuthResult := authentication.Init(config.AppConfig); initializeAuthResult.IsNotOk() {
-		log.Fatalf("%#v \n", initializeAuthResult)
+		handleInitializeError(initializeAuthResult)
 	}
-	
+
+	// Before anything else, lets add some users to the database
+	if addUsersResult := users.Init(); addUsersResult.IsNotOk() {
+		handleInitializeError(addUsersResult)
+	}
+
 	/*
 	   It is not an overly complicated thing to create one's own router and minimize
 	   the dependency on other libraries; in this case there would have been a little
@@ -45,10 +53,14 @@ func main() {
 	router.Use(middleware.CORS)
 	router.Use(middleware.ContentType)
 
-	userRoutes := router.PathPrefix("/users").Subrouter()
-	userRoutes.Use(middleware.Authentication)
-	userRoutes.HandleFunc("/{userId}/certificates", listHandlers.HandleHttpRequest).Methods(coreTypes.HTTP_GET)
-	
+	// Let us load all users and generate a certificate without being authenticated
+	router.HandleFunc("/users", userHttpHandlers.LoadAllUsers).Methods(coreTypes.HTTP_GET)
+	router.HandleFunc("/users/{userId}/token", userHttpHandlers.GenerateToken).Methods(coreTypes.HTTP_GET)
+
+	userSubRoutes := router.PathPrefix("/users/{userId}/certificats").Subrouter()
+	userSubRoutes.Use(middleware.Authentication)
+	userSubRoutes.HandleFunc("/", listHandlers.HandleHttpRequest).Methods(coreTypes.HTTP_GET)
+
 	certificateRoutes := router.PathPrefix("/certificates").Subrouter()
 	certificateRoutes.Use(middleware.Authentication)
 
@@ -65,4 +77,8 @@ func main() {
 	if err := http.ListenAndServe(config.AppConfig.Server.GetListenAddress(), nil); err != nil {
 		log.Fatalf("%v", err)
 	}
+}
+
+func handleInitializeError(error coreTypes.Result) {
+	log.Fatalf("%#v \n", error) // I want to print out the whole message
 }

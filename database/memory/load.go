@@ -6,9 +6,9 @@ package memory
 
 import (
 	"encoding/json"
-	
+
 	coreTypes "github.com/quinlanmorake/verisart-go/types/core"
-	
+
 	errorCodes "github.com/quinlanmorake/verisart-go/types/core/errorCodes"
 	errorMessages "github.com/quinlanmorake/verisart-go/types/core/errorMessages"
 
@@ -36,14 +36,14 @@ func (m *MemoryDb) Load(tableName string, dataHandler dbTypes.DataHandler) coreT
 				dbRows = append(dbRows, rowAsJsonByteArray)
 			}
 		}
-		
+
 		return dataHandler(dbRows)
 	}
 }
 
 func newFailureResult(message string) coreTypes.Result {
 	return coreTypes.Result{
-		Code: errorCodes.DATABASE_LOAD_FAILED,
+		Code:    errorCodes.DATABASE_LOAD_FAILED,
 		Message: errorMessages.ErrorMessage(message),
-	}	
+	}
 }

@@ -3,11 +3,11 @@ package memory
 import (
 	coreTypes "github.com/quinlanmorake/verisart-go/types/core"
 
-	tableNames "github.com/quinlanmorake/verisart-go/database/types/tableNames"	
+	tableNames "github.com/quinlanmorake/verisart-go/database/types/tableNames"
 )
 
 type UserTestingObject struct {
-	Id coreTypes.String `json:"id"`
+	Id   coreTypes.String `json:"id"`
 	Name coreTypes.String `json:"name"`
 }
 

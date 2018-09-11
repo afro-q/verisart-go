@@ -11,8 +11,8 @@ type Certificate struct {
 	Note    coreTypes.String `json:"note"`
 	OwnerId coreTypes.UserId `json:"ownerId"`
 
-	Title    coreTypes.String        `json:"title"`
-	Transfer TransferState `json:"transfer"`
+	Title    coreTypes.String `json:"title"`
+	Transfer TransferState    `json:"transfer"`
 
 	Year coreTypes.Year `json:"year"`
 }

@@ -14,13 +14,13 @@ var dbSchema goMemDb.DBSchema = goMemDb.DBSchema{
 		},
 
 		tableNames.CERTIFICATES: &goMemDb.TableSchema{
-			Name:    tableNames.CERTIFICATES, 
+			Name:    tableNames.CERTIFICATES,
 			Indexes: getIndexesForCertificatesTable(),
 		},
 
 		tableNames.TRANSFERS: &goMemDb.TableSchema{
-			Name: tableNames.TRANSFERS, 
-			Indexes: getIndexesForTransfersTable(), 
+			Name:    tableNames.TRANSFERS,
+			Indexes: getIndexesForTransfersTable(),
 		},
 	},
 }

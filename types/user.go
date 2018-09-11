@@ -3,7 +3,7 @@ package types
 import (
 	coreTypes "github.com/quinlanmorake/verisart-go/types/core"
 
-	tableNames "github.com/quinlanmorake/verisart-go/database/types/tableNames"		
+	tableNames "github.com/quinlanmorake/verisart-go/database/types/tableNames"
 )
 
 type User struct {

@@ -34,7 +34,7 @@ type Deleter interface {
   Load as such can fail at 2 points, either by the database code, trying to load, or by the provided closure.
 
   More importantly, being that this is an in-memory store anyway, we don't bother with filtering within the db layer.
-  When this moves to a db, a filtering mechansim will have to be added in.  
+  When this moves to a db, a filtering mechansim will have to be added in.
 */
 type Loader interface {
 	Load(string, DataHandler) coreTypes.Result

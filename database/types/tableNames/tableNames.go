@@ -1,7 +1,7 @@
 package tableNames
 
 const (
-	USERS = "users"
+	USERS        = "users"
 	CERTIFICATES = "certificates"
-	TRANSFERS = "transfers"
+	TRANSFERS    = "transfers"
 )

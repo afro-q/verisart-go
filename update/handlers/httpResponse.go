@@ -5,5 +5,5 @@ import (
 )
 
 type httpResponse struct {
-	Error       coreTypes.Result      `json:"error"`
+	Error coreTypes.Result `json:"error"`
 }

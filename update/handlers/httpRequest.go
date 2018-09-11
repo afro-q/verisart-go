@@ -5,5 +5,5 @@ import (
 )
 
 type httpRequest struct {
-	Title   coreTypes.String           `json:"title"`
+	Title coreTypes.String `json:"title"`
 }

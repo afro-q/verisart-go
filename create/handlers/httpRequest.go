@@ -5,8 +5,8 @@ import (
 )
 
 type httpRequest struct {
-	Title   coreTypes.String           `json:"title"`
+	Title   coreTypes.String `json:"title"`
 	OwnerId coreTypes.UserId `json:"ownerId"`
 	Year    coreTypes.Year   `json:"year"`
-	Note    coreTypes.String           `json:"note"`
+	Note    coreTypes.String `json:"note"`
 }

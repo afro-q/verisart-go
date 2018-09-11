@@ -30,12 +30,16 @@ func (s String) MarshalJSON() ([]byte, error) {
 
 func (s *String) UnmarshalJSON(data []byte) error {
 	asString := ""
-	
+
 	if unmarshalError := json.Unmarshal(data, &asString); unmarshalError != nil {
 		return unmarshalError
 	}
-	
+
 	*s = String(strings.TrimSpace(asString))
-	
+
 	return nil
+}
+
+func NewEmptyString() String {
+	return String("")
 }

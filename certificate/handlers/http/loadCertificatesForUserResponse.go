@@ -7,5 +7,5 @@ import (
 
 type loadCertificatesForUserResponse struct {
 	Error coreTypes.Result `json:"error"`
-	Certificates []businessTypes.Certificate `json:"certificate"`
+	Certificates []businessTypes.Certificate `json:"certificates"`
 }

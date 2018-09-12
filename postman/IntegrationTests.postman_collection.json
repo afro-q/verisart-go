@@ -1,0 +1,1475 @@
+{
+	"info": {
+		"_postman_id": "90666b34-6b7c-4f50-bf57-0ddbd09d0198",
+		"name": "Integration Tests",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "Prepare",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"id": "42182dbc-d552-4a93-9412-c9d56607e2cd",
+						"type": "text/javascript",
+						"exec": [
+							"// Set the default base url",
+							"postman.setEnvironmentVariable(\"baseUrl\", \"http://localhost:55555\");",
+							"",
+							"// Set what to use as an NOP url.",
+							"postman.setEnvironmentVariable(\"echoUrl\", \"https://postman-echo.com/post\")",
+							"",
+							"// Requests shouldn't take longer than this to fulfil",
+							"postman.setEnvironmentVariable(\"maxRequestTimeInMilliseconds\", 1000); ",
+							"",
+							"// The current sub-journey we're running, this just gets reset",
+							"postman.setEnvironmentVariable(\"currentJourney\", \"\");",
+							"// The name of the request that was sent, also, just gets reset here",
+							"postman.setEnvironmentVariable(\"requestJustSent\", \"\");",
+							"",
+							"// For every journey, this keeps an index of what we've run, this is used to allow us to run the same",
+							"// thing in a journey",
+							"postman.setEnvironmentVariable(\"journeyRunIndexes\", JSON.stringify({}));",
+							"",
+							"// We use this variable to make it easy to handle changes in the names of requests",
+							"// Prepare is excluded from here, as no request calls \"Prepare\"",
+							"const requestNames = {",
+							"    main_workflow: \"Main Workflow\",",
+							"    ",
+							"    cors_test: \"CORS test\",",
+							"    authentication_test: \"Authentication tests\",",
+							"    test_authentication_for_invalid_user: \"Test authentication for invalid user\",",
+							"    successful_journey: \"Successful journey\",",
+							"    duplicate_transfer_test: \"Validate user cannot create duplicate transfers\",",
+							"    transfer_to_non_existent_user_test: \"Validate user cannot transfer to non-existent user\",",
+							"    transfer_deleted_certificate_test: \"Validate user cannot accept a transfer from a deleted certificate\",",
+							"    accept_certificate_twice_test: \"Validate user cannot accept a transfer twice\",",
+							"    delete_transfered_certificate_test: \"Validate user cannot delete certificate after it was transfered\",",
+							"    edit_another_users_certificate_test: \"Validate user cannot modify a certificate that belongs to another user\",",
+							"    validate_indefinite_transferibility: \"Validate transfers can be sent back and forth\",",
+							"    ",
+							"    select_first_user: \"Select first user\",",
+							"    select_second_user: \"Select second user\",",
+							"    ",
+							"    set_first_user_as_user_to_use: \"Set first user users id\",",
+							"    set_second_user_as_user_to_use: \"Set second user users id\",",
+							"    ",
+							"    generate_token: \"Generate token\",",
+							"    create_certificate: \"Create certificate\",",
+							"    prepare_first_user_load_certificates: \"Prepare to load certificates for first user\",",
+							"    load_certificate_for_user: \"Load certificates for user\",",
+							"    validate_first_user_has_created_certificate: \"Validate first user has created certificate\",",
+							"    prepare_to_update_created_certificate: \"Prepare to update certificate just created\",",
+							"    update_certificate: \"Update certificate\",",
+							"    select_second_user_as_user_to_transfer_to: \"Select second user as user to transfer to\",",
+							"    create_transfer: \"Create transfer\",",
+							"    accept_transfer: \"Accept transfer\",",
+							"    delete_certificate: \"Delete certificate\",",
+							"    ",
+							"    exit: \"Exit\"",
+							"};",
+							"postman.setEnvironmentVariable(\"requestNames\", JSON.stringify(requestNames));",
+							"",
+							"// This is a global function that we use to validate response time.",
+							"postman.setGlobalVariable(\"validateResponseTime\", (requestName) => {",
+							"    const millisecondsSinceEpochPreRequest = postman.getEnvironmentVariable(\"millisecondsOnRequestStart\");",
+							"    const currentMillisecondsSinceEpoch =  Date.now();",
+							"    const millisecondsElapsed = currentMillisecondsSinceEpoch - millisecondsSinceEpochPreRequest;",
+							"    ",
+							"    const maxRequestTimeInMilliseconds = parseInt(postman.setEnvironmentVariable(\"maxRequestTimeInMilliseconds\"));",
+							"    ",
+							"    if (millisecondsElapsed > maxRequestTimeInMilliseconds) {",
+							"        tests[`${requestName} took too long (${millisecondsElapsed})`] = false;",
+							"    } else {",
+							"        tests[`${requestName} execution time`] = true;",
+							"    }",
+							"});",
+							"",
+							"postman.setNextRequest(requestNames.main_workflow);"
+						]
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {},
+				"url": {
+					"raw": "https://postman-echo.com/post",
+					"protocol": "https",
+					"host": [
+						"postman-echo",
+						"com"
+					],
+					"path": [
+						"post"
+					]
+				},
+				"description": "Creates an required environment variables (so that we avoid exporting ENV to make life easier for others right now), and resets and environment variables that need to be reset; in case anyone runs through this with \"persist env variables\""
+			},
+			"response": []
+		},
+		{
+			"name": "Main Workflow",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"id": "3e5d7d27-5322-4596-bfd4-7743f13cc4c5",
+						"type": "text/javascript",
+						"exec": [
+							"/*",
+							"    This request controls the main test flow",
+							"*/",
+							"const requestNames = JSON.parse(postman.getEnvironmentVariable(\"requestNames\"));",
+							"",
+							"// Figure out which journey was just completed",
+							"const journeyJustRun = postman.getEnvironmentVariable(\"currentJourney\");",
+							"",
+							"// Reset necessary variables",
+							"postman.setEnvironmentVariable(\"requestJustSent\", \"\");",
+							"postman.setEnvironmentVariable(\"subJourneyRunIndexes\", JSON.stringify({}));",
+							"",
+							"const runOrder = [",
+							"    requestNames.cors_test,",
+							"    requestNames.authentication_test,",
+							"    requestNames.test_authentication_for_invalid_user,",
+							"    requestNames.successful_journey,",
+							"    requestNames.duplicate_transfer_test,",
+							"    //requestNames.transfer_to_non_existent_user_test,",
+							"    //requestNames.transfer_deleted_certificate_test,",
+							"    //requestNames.accept_certificate_twice_test,",
+							"    //requestNames.delete_transfered_certificate_test,",
+							"    //requestNames.edit_another_users_certificate_test,",
+							"    //requestNames.validate_indefinite_transferibility,",
+							"  ",
+							"    \"Exit\"",
+							"];",
+							"    ",
+							"let shouldExit = false;",
+							"let journeyToMoveOnto = '';",
+							"",
+							"if (journeyJustRun === \"\") {",
+							"    journeyToMoveOnto = runOrder[0];",
+							"} else {",
+							"    let indexOfJourneyJustRun = runOrder.indexOf(journeyJustRun);",
+							"    ",
+							"    // If we've run something that isn't in the list, then we are going to fail and exit",
+							"    if (indexOfJourneyJustRun === -1) {",
+							"        tests[`Workflow ran a request that was not in its list (${journeyJustRun})`] = false",
+							"        shouldExit = true;",
+							"    } else {",
+							"        // If we have run this before, we need to move onto the next iteration of it",
+							"        let journeyRunIndexes = JSON.parse(postman.getEnvironmentVariable(\"journeyRunIndexes\"));",
+							"        ",
+							"        // Have we run this journey before?",
+							"        if (journeyRunIndexes[journeyJustRun]) {",
+							"            // Get the index of this request that comes after the one we've run before",
+							"            indexOfJourneyJustRun = runOrder.indexOf(journeyJustRun, journeyRunIndexes[journeyJustRun] + 1);",
+							"        }",
+							"        ",
+							"        // Set the index of this journey",
+							"        journeyRunIndexes[journeyJustRun] = indexOfJourneyJustRun;",
+							"        postman.setEnvironmentVariable(\"journeyRunIndexes\", JSON.stringify(journeyRunIndexes));",
+							"        ",
+							"        journeyToMoveOnto = runOrder[indexOfJourneyJustRun + 1];",
+							"    }",
+							"}",
+							"",
+							"if (!shouldExit) {",
+							"    postman.setNextRequest(journeyToMoveOnto);",
+							"} else {",
+							"    postman.setNextRequest(\"Exit\");",
+							"}"
+						]
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {},
+				"url": {
+					"raw": "{{echoUrl}}",
+					"host": [
+						"{{echoUrl}}"
+					]
+				},
+				"description": "Postman provides no way of controlling the flow of requests when requests need to loop other than the \"setNextRequest\" function.\n\nThis requests provides a flow control mechansim for the test suite as a whole. There is a sub flow mechanism as well."
+			},
+			"response": []
+		},
+		{
+			"name": "CORS test",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"id": "22289ade-c21d-4fd3-b39e-c434c559e238",
+						"type": "text/javascript",
+						"exec": [
+							"const requestNames = JSON.parse(postman.getEnvironmentVariable(\"requestNames\"));",
+							"postman.setEnvironmentVariable(\"currentJourney\", requestNames.cors_test);",
+							"",
+							"// Back to main workflow once done",
+							"postman.setNextRequest(requestNames.main_workflow);"
+						]
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {},
+				"url": {
+					"raw": "{{echoUrl}}",
+					"host": [
+						"{{echoUrl}}"
+					]
+				},
+				"description": "Tests cors across endpoints"
+			},
+			"response": []
+		},
+		{
+			"name": "Authentication tests",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"id": "f2bb7aec-3a37-417a-bd1e-dc1a2f59eccc",
+						"type": "text/javascript",
+						"exec": [
+							"const requestNames = JSON.parse(postman.getEnvironmentVariable(\"requestNames\"));",
+							"postman.setEnvironmentVariable(\"currentJourney\", requestNames.authentication_test);"
+						]
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {},
+				"url": {
+					"raw": "{{echoUrl}}",
+					"host": [
+						"{{echoUrl}}"
+					]
+				},
+				"description": "Tests cors across endpoints"
+			},
+			"response": []
+		},
+		{
+			"name": "Test authentication for invalid user",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"id": "8952f75b-b056-4e8d-b4a2-0a92b04f75cc",
+						"type": "text/javascript",
+						"exec": [
+							"const requestNames = JSON.parse(postman.getEnvironmentVariable(\"requestNames\"));",
+							"postman.setEnvironmentVariable(\"currentJourney\", requestNames.test_authentication_for_invalid_user);",
+							"",
+							"// Back to main workflow once done",
+							"postman.setNextRequest(requestNames.main_workflow);"
+						]
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {},
+				"url": {
+					"raw": "{{echoUrl}}",
+					"host": [
+						"{{echoUrl}}"
+					]
+				},
+				"description": "Tests cors across endpoints"
+			},
+			"response": []
+		},
+		{
+			"name": "Successful journey",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"id": "51374402-9e71-4326-bdf7-0abb473cd8f7",
+						"type": "text/javascript",
+						"exec": [
+							"const requestNames = JSON.parse(postman.getEnvironmentVariable(\"requestNames\"));",
+							"postman.setEnvironmentVariable(\"currentJourney\", requestNames.successful_journey);",
+							"",
+							"// Same as in main loop, just using the requestJustSent variable",
+							"const requestJustSent = postman.getEnvironmentVariable(\"requestJustSent\");",
+							"",
+							"// Need to tell sub requests to come back here",
+							"postman.setEnvironmentVariable(\"requestAfterSelectAUser\", requestNames.successful_journey);",
+							"postman.setEnvironmentVariable(\"requestAfterSetFirstUserUserId\", requestNames.successful_journey);",
+							"postman.setEnvironmentVariable(\"requestAfterGenerateToken\", requestNames.successful_journey);",
+							"postman.setEnvironmentVariable(\"requestAfterCreateCertificate\", requestNames.successful_journey);",
+							"postman.setEnvironmentVariable(\"requestAfterPrepareToLoadCertificatesForFirstUser\", requestNames.successful_journey);",
+							"postman.setEnvironmentVariable(\"requestAfterLoadCertificatesForUser\", requestNames.successful_journey);",
+							"postman.setEnvironmentVariable(\"requestAfterValidateFirstUserHasCreatedCertificate\", requestNames.successful_journey);",
+							"postman.setEnvironmentVariable(\"requestAfterPrepareToUpdateCreatedCertificate\", requestNames.successful_journey);",
+							"postman.setEnvironmentVariable(\"requestAfterUpdateCertificate\", requestNames.successful_journey);",
+							"postman.setEnvironmentVariable(\"requestAfterSelectSecondUserAsUserToTransferTo\", requestNames.successful_journey);",
+							"postman.setEnvironmentVariable(\"requestAfterCreateTransfer\", requestNames.successful_journey);",
+							"postman.setEnvironmentVariable(\"requestAfterSelectSecondUser\", requestNames.successful_journey);",
+							"postman.setEnvironmentVariable(\"requestAfterSetSecondUserUserId\", requestNames.successful_journey);",
+							"postman.setEnvironmentVariable(\"requestAfterAcceptTransfer\", requestNames.successful_journey);",
+							"postman.setEnvironmentVariable(\"requestAfterDeleteCertificate\", requestNames.successful_journey);",
+							"",
+							"const runOrder = [",
+							"    requestNames.select_first_user,",
+							"    requestNames.set_first_user_as_user_to_use,",
+							"    requestNames.generate_token,",
+							"    requestNames.create_certificate,",
+							"    requestNames.prepare_first_user_load_certificates,",
+							"    requestNames.load_certificate_for_user,",
+							"    requestNames.validate_first_user_has_created_certificate,",
+							"    requestNames.prepare_to_update_created_certificate,",
+							"    requestNames.update_certificate,",
+							"    requestNames.select_second_user,",
+							"    requestNames.select_second_user_as_user_to_transfer_to,",
+							"    requestNames.create_transfer,",
+							"    requestNames.set_second_user_as_user_to_use,",
+							"    requestNames.generate_token,",
+							"    requestNames.accept_transfer,",
+							"    requestNames.delete_certificate,",
+							"    ",
+							"    // Back to main workflow once done",
+							"    requestNames.main_workflow",
+							"]",
+							"",
+							"let shouldExit = false;",
+							"let journeyToMoveOnto = '';",
+							"",
+							"if (requestJustSent === \"\") {",
+							"    journeyToMoveOnto = runOrder[0];",
+							"} else {",
+							"    let indexOfRequestJustSent = runOrder.indexOf(requestJustSent);",
+							"    ",
+							"    // If we've run something that isn't in the list, then we are going to fail and exit",
+							"    if (indexOfRequestJustSent === -1) {",
+							"        tests[`${requestNames.successful_journey} ran a request that was not in its list (${requestJustSent})`] = false",
+							"        shouldExit = true;",
+							"    } else {",
+							"        // If we have run this before, we need to move onto the next iteration of it",
+							"        let subJourneyRunIndexes = JSON.parse(postman.getEnvironmentVariable(\"subJourneyRunIndexes\"));",
+							"        ",
+							"        // Have we run this journey before?",
+							"        if (subJourneyRunIndexes[requestJustSent]) {",
+							"            // Get the index of this request that comes after the one we've run before",
+							"            indexOfRequestJustSent = runOrder.indexOf(requestJustSent, subJourneyRunIndexes[requestJustSent] + 1);",
+							"        }",
+							"        ",
+							"        // Set the index of this journey",
+							"        subJourneyRunIndexes[requestJustSent] = indexOfRequestJustSent;",
+							"        postman.setEnvironmentVariable(\"subJourneyRunIndexes\", JSON.stringify(subJourneyRunIndexes));",
+							"        ",
+							"        journeyToMoveOnto = runOrder[indexOfRequestJustSent + 1];",
+							"    }",
+							"}",
+							"",
+							"if (!shouldExit) {",
+							"    postman.setNextRequest(journeyToMoveOnto);",
+							"} else {",
+							"    postman.setNextRequest(\"Exit\");",
+							"}"
+						]
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {},
+				"url": {
+					"raw": "{{echoUrl}}",
+					"host": [
+						"{{echoUrl}}"
+					]
+				},
+				"description": "Tests cors across endpoints"
+			},
+			"response": []
+		},
+		{
+			"name": "Validate user cannot create duplicate transfers",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"id": "bf465732-8925-4350-a9b2-757b192aa354",
+						"type": "text/javascript",
+						"exec": [
+							"const requestNames = JSON.parse(postman.getEnvironmentVariable(\"requestNames\"));",
+							"postman.setEnvironmentVariable(\"currentJourney\", requestNames.duplicate_transfer_test);",
+							"",
+							"// Back to main workflow once done",
+							"postman.setNextRequest(requestNames.main_workflow);"
+						]
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {},
+				"url": {
+					"raw": "{{echoUrl}}",
+					"host": [
+						"{{echoUrl}}"
+					]
+				},
+				"description": "Tests cors across endpoints"
+			},
+			"response": []
+		},
+		{
+			"name": "Validate user cannot transfer to non-existent user",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"id": "9d684d90-6853-4d86-bfdf-8a89fc8ea46e",
+						"type": "text/javascript",
+						"exec": [
+							"const requestNames = JSON.parse(postman.getEnvironmentVariable(\"requestNames\"));",
+							"postman.setEnvironmentVariable(\"currentJourney\", requestNames.transfer_to_non_existent_user_test);",
+							"",
+							"// Back to main workflow once done",
+							"postman.setNextRequest(requestNames.main_workflow);"
+						]
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {},
+				"url": {
+					"raw": "{{echoUrl}}",
+					"host": [
+						"{{echoUrl}}"
+					]
+				},
+				"description": "Tests cors across endpoints"
+			},
+			"response": []
+		},
+		{
+			"name": "Validate user cannot accept a transfer from a deleted certificate",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"id": "45c1d957-75ae-44d4-b6cd-865e97237894",
+						"type": "text/javascript",
+						"exec": [
+							"const requestNames = JSON.parse(postman.getEnvironmentVariable(\"requestNames\"));",
+							"postman.setEnvironmentVariable(\"currentJourney\", requestNames.transfer_deleted_certificate_test);",
+							"",
+							"// Back to main workflow once done",
+							"postman.setNextRequest(requestNames.main_workflow);"
+						]
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {},
+				"url": {
+					"raw": "{{echoUrl}}",
+					"host": [
+						"{{echoUrl}}"
+					]
+				},
+				"description": "Tests cors across endpoints"
+			},
+			"response": []
+		},
+		{
+			"name": "Validate user cannot accept a transfer twice",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"id": "9b286f8f-9564-4146-9747-dc432c6926c3",
+						"type": "text/javascript",
+						"exec": [
+							"const requestNames = JSON.parse(postman.getEnvironmentVariable(\"requestNames\"));",
+							"postman.setEnvironmentVariable(\"currentJourney\", requestNames.accept_certificate_twice_test);",
+							"",
+							"// Back to main workflow once done",
+							"postman.setNextRequest(requestNames.main_workflow);"
+						]
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {},
+				"url": {
+					"raw": "{{echoUrl}}",
+					"host": [
+						"{{echoUrl}}"
+					]
+				},
+				"description": "Tests cors across endpoints"
+			},
+			"response": []
+		},
+		{
+			"name": "Validate user cannot delete certificate after it was transfered",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"id": "76c46ec8-cdfd-4c8f-805d-21556d5374f7",
+						"type": "text/javascript",
+						"exec": [
+							"const requestNames = JSON.parse(postman.getEnvironmentVariable(\"requestNames\"));",
+							"postman.setEnvironmentVariable(\"currentJourney\", requestNames.delete_transfered_certificate_test);",
+							"",
+							"// Back to main workflow once done",
+							"postman.setNextRequest(requestNames.main_workflow);"
+						]
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {},
+				"url": {
+					"raw": "{{echoUrl}}",
+					"host": [
+						"{{echoUrl}}"
+					]
+				},
+				"description": "Tests cors across endpoints"
+			},
+			"response": []
+		},
+		{
+			"name": "Validate user cannot modify a certificate that belongs to another user",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"id": "4010c050-e6b8-4f98-9b44-874df6afc056",
+						"type": "text/javascript",
+						"exec": [
+							"const requestNames = JSON.parse(postman.getEnvironmentVariable(\"requestNames\"));",
+							"postman.setEnvironmentVariable(\"currentJourney\", requestNames.edit_another_users_certificate_test);",
+							"",
+							"// Back to main workflow once done",
+							"postman.setNextRequest(requestNames.main_workflow);"
+						]
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {},
+				"url": {
+					"raw": "{{echoUrl}}",
+					"host": [
+						"{{echoUrl}}"
+					]
+				},
+				"description": "Tests cors across endpoints"
+			},
+			"response": []
+		},
+		{
+			"name": "Validate transfers can be sent back and forth",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"id": "48b882d7-5e78-4463-9c9a-136c2985b6ea",
+						"type": "text/javascript",
+						"exec": [
+							"const requestNames = JSON.parse(postman.getEnvironmentVariable(\"requestNames\"));",
+							"postman.setEnvironmentVariable(\"currentJourney\", requestNames.validate_indefinite_transferibility);",
+							"",
+							"// Back to main workflow once done",
+							"postman.setNextRequest(requestNames.main_workflow);"
+						]
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {},
+				"url": {
+					"raw": "{{echoUrl}}",
+					"host": [
+						"{{echoUrl}}"
+					]
+				},
+				"description": "Tests cors across endpoints"
+			},
+			"response": []
+		},
+		{
+			"name": "Select first user",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"id": "abfdd2df-75a1-4e9d-886b-ed62795a18fa",
+						"type": "text/javascript",
+						"exec": [
+							"const requestNames = JSON.parse(postman.getEnvironmentVariable(\"requestNames\"));",
+							"postman.setEnvironmentVariable(\"requestJustSent\", requestNames.select_first_user);",
+							"",
+							"const response = JSON.parse(responseBody)",
+							"",
+							"const requestSucceeded = (response.error.code === 0);",
+							"tests[`${requestNames.select_first_user} succeeded`] = requestSucceeded;",
+							"",
+							"let shouldContinue = requestSucceeded;",
+							"if (requestSucceeded) {",
+							"    // Validate response duration",
+							"    eval(globals.validateResponseTime)(requestNames.select_first_user);",
+							"",
+							"    if (response.users.length === 0) {",
+							"        shouldContinue = false;",
+							"        ",
+							"        // We just do this to make it easy to identify the problem in the postman report",
+							"        tests[`${requestNames.select_first_user} could not find any users`] = false;",
+							"    } else {",
+							"        postman.setEnvironmentVariable(\"firstUser\", JSON.stringify(response.users[0]));",
+							"    }",
+							"}",
+							"",
+							"if (shouldContinue) {",
+							"    postman.setNextRequest(postman.getEnvironmentVariable(\"requestAfterSelectAUser\"));",
+							"} else {",
+							"    postman.setNextRequest(requestNames.exit);",
+							"}"
+						]
+					}
+				}
+			],
+			"request": {
+				"method": "GET",
+				"header": [],
+				"body": {},
+				"url": {
+					"raw": "{{baseUrl}}/users",
+					"host": [
+						"{{baseUrl}}"
+					],
+					"path": [
+						"users"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Set first user users id",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"id": "100ac961-ea8c-4ef2-82e4-bbaca62bb806",
+						"type": "text/javascript",
+						"exec": [
+							"const requestNames = JSON.parse(postman.getEnvironmentVariable(\"requestNames\"));",
+							"postman.setEnvironmentVariable(\"requestJustSent\", requestNames.set_first_user_as_user_to_use);",
+							"",
+							"const firstUser = JSON.parse(postman.getEnvironmentVariable(\"firstUser\"));",
+							"",
+							"postman.setEnvironmentVariable(\"userId\", firstUser.id);",
+							"postman.setEnvironmentVariable(\"emailAddress\", firstUser.email);",
+							"",
+							"postman.setNextRequest(postman.getEnvironmentVariable(\"requestAfterSetFirstUserUserId\"));"
+						]
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {},
+				"url": {
+					"raw": "https://postman-echo.com/post",
+					"protocol": "https",
+					"host": [
+						"postman-echo",
+						"com"
+					],
+					"path": [
+						"post"
+					]
+				},
+				"description": "We are just setting which user id / email / name to use for the subsequent request; as the first users' id / email / name"
+			},
+			"response": []
+		},
+		{
+			"name": "Generate token",
+			"event": [
+				{
+					"listen": "prerequest",
+					"script": {
+						"id": "f420a80c-e2c7-442d-833c-aed7e9836ff0",
+						"type": "text/javascript",
+						"exec": [
+							""
+						]
+					}
+				},
+				{
+					"listen": "test",
+					"script": {
+						"id": "66920436-bde8-47dd-a71e-df2d3e465161",
+						"type": "text/javascript",
+						"exec": [
+							"const requestNames = JSON.parse(postman.getEnvironmentVariable(\"requestNames\"));",
+							"postman.setEnvironmentVariable(\"requestJustSent\", requestNames.generate_token);",
+							"",
+							"const response = JSON.parse(responseBody)",
+							"",
+							"const requestSucceeded = (response.error.code === 0);",
+							"tests[`${requestNames.generate_token} succeeded`] = requestSucceeded;",
+							"",
+							"let shouldContinue = requestSucceeded;",
+							"if (shouldContinue) {",
+							"    // Validate response duration",
+							"    eval(globals.validateResponseTime)(requestNames.generate_token);",
+							"    ",
+							"    if (response.jwt.length === 0) {",
+							"        shouldContinue = false;",
+							"        ",
+							"        // We just do this to make it easy to identify the problem in the postman report",
+							"        tests[`${requestNames.generate_token} did not generate a token`] = false;",
+							"    } else {",
+							"        postman.setEnvironmentVariable(\"jwtToken\", response.jwt);",
+							"    }",
+							"}",
+							"",
+							"if (shouldContinue) {",
+							"    postman.setNextRequest(postman.getEnvironmentVariable(\"requestAfterGenerateToken\"));",
+							"} else {",
+							"    postman.setNextRequest(requestNames.exit);",
+							"}"
+						]
+					}
+				}
+			],
+			"request": {
+				"method": "GET",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": ""
+				},
+				"url": {
+					"raw": "{{baseUrl}}/users/{{userId}}/token",
+					"host": [
+						"{{baseUrl}}"
+					],
+					"path": [
+						"users",
+						"{{userId}}",
+						"token"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Create certificate",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"id": "29e25514-5e83-44b0-a06e-c54b377d68e1",
+						"type": "text/javascript",
+						"exec": [
+							"const requestNames = JSON.parse(postman.getEnvironmentVariable(\"requestNames\"));",
+							"postman.setEnvironmentVariable(\"requestJustSent\", requestNames.create_certificate);",
+							"",
+							"const response = JSON.parse(responseBody)",
+							"",
+							"const requestSucceeded = (response.error.code === 0);",
+							"tests[`${requestNames.create_certificate} succeeded`] = requestSucceeded;",
+							"",
+							"let shouldContinue = requestSucceeded;",
+							"if (shouldContinue) {",
+							"    // Validate response duration",
+							"    eval(globals.validateResponseTime)(requestNames.create_certificate);",
+							"    ",
+							"    if (response.certificate.id === 0) {",
+							"        shouldContinue = false;",
+							"        ",
+							"        // We just do this to make it easy to identify the problem in the postman report",
+							"        tests[`${requestNames.create_certificate} did not return a certificate id`] = false;",
+							"    } else {",
+							"        postman.setEnvironmentVariable(\"createdCertificate\", JSON.stringify(response.certificate));",
+							"    }",
+							"}",
+							"",
+							"if (shouldContinue) {",
+							"    postman.setNextRequest(postman.getEnvironmentVariable(\"requestAfterCreateCertificate\"));",
+							"} else {",
+							"    postman.setNextRequest(requestNames.exit);",
+							"}"
+						]
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					},
+					{
+						"key": "Authorization",
+						"value": "{{jwtToken}}"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n\t\"Title\": \"Test certificate\",\n\t\"Note\": \"\",\n\t\"Year\": 2040\n}"
+				},
+				"url": {
+					"raw": "{{baseUrl}}/certificates/",
+					"host": [
+						"{{baseUrl}}"
+					],
+					"path": [
+						"certificates",
+						""
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Prepare to load certificates for first user",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"id": "f2e3e8d4-d865-41d7-9b1a-2cf61ae6e153",
+						"type": "text/javascript",
+						"exec": [
+							"const requestNames = JSON.parse(postman.getEnvironmentVariable(\"requestNames\"));",
+							"postman.setEnvironmentVariable(\"requestJustSent\", requestNames.prepare_first_user_load_certificates);",
+							"",
+							"const firstUser = JSON.parse(postman.getEnvironmentVariable(\"firstUser\"));",
+							"",
+							"postman.setEnvironmentVariable(\"userId\", firstUser.id);",
+							"",
+							"postman.setNextRequest(postman.getEnvironmentVariable(\"requestAfterPrepareToLoadCertificatesForFirstUser\"));"
+						]
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {},
+				"url": {
+					"raw": "https://postman-echo.com/post",
+					"protocol": "https",
+					"host": [
+						"postman-echo",
+						"com"
+					],
+					"path": [
+						"post"
+					]
+				},
+				"description": "We are just setting which user id / email / name to use for the subsequent request; as the first users' id / email / name"
+			},
+			"response": []
+		},
+		{
+			"name": "Load certificates for user",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"id": "59bd1f8a-3217-41ef-a8ac-8a3777681258",
+						"type": "text/javascript",
+						"exec": [
+							"const requestNames = JSON.parse(postman.getEnvironmentVariable(\"requestNames\"));",
+							"postman.setEnvironmentVariable(\"requestJustSent\", requestNames.load_certificate_for_user);",
+							"",
+							"const response = JSON.parse(responseBody)",
+							"",
+							"const requestSucceeded = (response.error.code === 0);",
+							"tests[`${requestNames.load_certificate_for_user} succeeded`] = requestSucceeded;",
+							"",
+							"let shouldContinue = requestSucceeded;",
+							"if (shouldContinue) {",
+							"    // Validate response duration",
+							"    eval(globals.validateResponseTime)(requestNames.load_certificate_for_user);",
+							"    ",
+							"    postman.setEnvironmentVariable(\"certificatesForUser\", JSON.stringify(response.certificates));",
+							"}",
+							"",
+							"if (shouldContinue) {",
+							"    postman.setNextRequest(postman.getEnvironmentVariable(\"requestAfterLoadCertificatesForUser\"));",
+							"} else {",
+							"    postman.setNextRequest(requestNames.exit);",
+							"}"
+						]
+					}
+				}
+			],
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					},
+					{
+						"key": "Authorization",
+						"value": "{{jwtToken}}"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n\t\"Title\": \"Test certificate\",\n\t\"Note\": \"\",\n\t\"Year\": 2040\n}"
+				},
+				"url": {
+					"raw": "{{baseUrl}}/users/{{userId}}/certificates/",
+					"host": [
+						"{{baseUrl}}"
+					],
+					"path": [
+						"users",
+						"{{userId}}",
+						"certificates",
+						""
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Validate first user has created certificate",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"id": "22abd43f-caa7-4695-8033-1ea5b46ed11f",
+						"type": "text/javascript",
+						"exec": [
+							"const requestNames = JSON.parse(postman.getEnvironmentVariable(\"requestNames\"));",
+							"postman.setEnvironmentVariable(\"requestJustSent\", requestNames.validate_first_user_has_created_certificate);",
+							"",
+							"const firstUser = JSON.parse(postman.getEnvironmentVariable(\"firstUser\"));",
+							"const certificatesForUser = JSON.parse(postman.getEnvironmentVariable(\"certificatesForUser\"));",
+							"const createdCertificate = JSON.parse(postman.getEnvironmentVariable(\"createdCertificate\"));",
+							"",
+							"let createdCertificateBelongsToUser = false;",
+							"certificatesForUser.forEach((certificate) => {",
+							"    if ((certificate.id === createdCertificate.id) && (certificate.ownerId === firstUser.id)) {",
+							"        createdCertificateBelongsToUser = true;",
+							"    }",
+							"});",
+							"",
+							"tests[`${requestNames.validate_first_user_has_created_certificate}`] = createdCertificateBelongsToUser;",
+							"",
+							"if (createdCertificateBelongsToUser) {",
+							"    postman.setNextRequest(postman.getEnvironmentVariable(\"requestAfterValidateFirstUserHasCreatedCertificate\"));",
+							"} else {",
+							"    postman.setNextRequest(requestNames.exit);",
+							"}"
+						]
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {},
+				"url": {
+					"raw": "https://postman-echo.com/post",
+					"protocol": "https",
+					"host": [
+						"postman-echo",
+						"com"
+					],
+					"path": [
+						"post"
+					]
+				},
+				"description": "We are just setting which user id / email / name to use for the subsequent request; as the first users' id / email / name"
+			},
+			"response": []
+		},
+		{
+			"name": "Prepare to update certificate just created",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"id": "5dcf9447-ad1e-48d4-bd1f-6af889637059",
+						"type": "text/javascript",
+						"exec": [
+							"const requestNames = JSON.parse(postman.getEnvironmentVariable(\"requestNames\"));",
+							"postman.setEnvironmentVariable(\"requestJustSent\", requestNames.prepare_to_update_created_certificate);",
+							"",
+							"const createdCertificate = JSON.parse(postman.getEnvironmentVariable(\"createdCertificate\"));",
+							"",
+							"postman.setEnvironmentVariable(\"certificateId\", createdCertificate.id);",
+							"",
+							"postman.setEnvironmentVariable(\"newTitle\", \"Updated title\");",
+							"postman.setEnvironmentVariable(\"newNote\", \"Updated note\");",
+							"postman.setEnvironmentVariable(\"newYear\", 2041 );",
+							"",
+							"postman.setNextRequest(postman.getEnvironmentVariable(\"requestAfterPrepareToUpdateCreatedCertificate\"));"
+						]
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": ""
+				},
+				"url": {
+					"raw": "{{echoUrl}}",
+					"host": [
+						"{{echoUrl}}"
+					]
+				},
+				"description": "We are just setting which user id / email / name to use for the subsequent request; as the first users' id / email / name"
+			},
+			"response": []
+		},
+		{
+			"name": "Update certificate",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"id": "ee8b7027-69bd-4753-b905-24c76ec8c0d6",
+						"type": "text/javascript",
+						"exec": [
+							"const requestNames = JSON.parse(postman.getEnvironmentVariable(\"requestNames\"));",
+							"postman.setEnvironmentVariable(\"requestJustSent\", requestNames.update_certificate);",
+							"",
+							"const response = JSON.parse(responseBody)",
+							"",
+							"const requestSucceeded = (response.error.code === 0);",
+							"tests[`${requestNames.update_certificate} succeeded`] = requestSucceeded;",
+							"",
+							"let shouldContinue = requestSucceeded;",
+							"if (shouldContinue) {",
+							"    // Validate response duration",
+							"    eval(globals.validateResponseTime)(requestNames.update_certificate);",
+							"}",
+							"",
+							"if (shouldContinue) {",
+							"    postman.setNextRequest(postman.getEnvironmentVariable(\"requestAfterUpdateCertificate\"));",
+							"} else {",
+							"    postman.setNextRequest(requestNames.exit);",
+							"}"
+						]
+					}
+				}
+			],
+			"request": {
+				"method": "PUT",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					},
+					{
+						"key": "Authorization",
+						"value": "{{jwtToken}}"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n\t\"Title\": \"{{newTitle}}\",\n\t\"Note\": \"{{newNote}}\",\n\t\"Year\": {{newYear}}\n}"
+				},
+				"url": {
+					"raw": "{{baseUrl}}/certificates/{{certificateId}}",
+					"host": [
+						"{{baseUrl}}"
+					],
+					"path": [
+						"certificates",
+						"{{certificateId}}"
+					]
+				},
+				"description": "We are just setting which user id / email / name to use for the subsequent request; as the first users' id / email / name"
+			},
+			"response": []
+		},
+		{
+			"name": "Select second user as user to transfer to",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"id": "c96be739-dd12-40ea-a8ec-8c02f318e5cf",
+						"type": "text/javascript",
+						"exec": [
+							"const requestNames = JSON.parse(postman.getEnvironmentVariable(\"requestNames\"));",
+							"postman.setEnvironmentVariable(\"requestJustSent\", requestNames.select_second_user_as_user_to_transfer_to);",
+							"",
+							"const response = JSON.parse(responseBody)",
+							"",
+							"const requestSucceeded = (response.error.code === 0);",
+							"tests[`${requestNames.select_second_user_as_user_to_transfer_to} succeeded`] = requestSucceeded;",
+							"",
+							"let shouldContinue = requestSucceeded;",
+							"if (requestSucceeded) {",
+							"    // Validate response duration",
+							"    eval(globals.validateResponseTime)(requestNames.select_second_user_as_user_to_transfer_to);",
+							"",
+							"    if (response.users.length < 2) {",
+							"        shouldContinue = false;",
+							"        ",
+							"        // We just do this to make it easy to identify the problem in the postman report",
+							"        tests[`${requestNames.select_second_user_as_user_to_transfer_to} could not find 2 users`] = false;",
+							"    } else {",
+							"        postman.setEnvironmentVariable(\"userToTransferToEmail\", response.users[1].email);",
+							"    }",
+							"}",
+							"",
+							"if (shouldContinue) {",
+							"    postman.setNextRequest(postman.getEnvironmentVariable(\"requestAfterSelectSecondUserAsUserToTransferTo\"));",
+							"} else {",
+							"    postman.setNextRequest(requestNames.exit);",
+							"}"
+						]
+					}
+				}
+			],
+			"request": {
+				"method": "GET",
+				"header": [],
+				"body": {},
+				"url": {
+					"raw": "{{baseUrl}}/users",
+					"host": [
+						"{{baseUrl}}"
+					],
+					"path": [
+						"users"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Create transfer",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"id": "90e34518-43b4-491b-bc29-31f67069e5af",
+						"type": "text/javascript",
+						"exec": [
+							"const requestNames = JSON.parse(postman.getEnvironmentVariable(\"requestNames\"));",
+							"postman.setEnvironmentVariable(\"requestJustSent\", requestNames.create_transfer);",
+							"",
+							"const response = JSON.parse(responseBody)",
+							"",
+							"const requestSucceeded = (response.error.code === 0);",
+							"tests[`${requestNames.create_transfer} succeeded`] = requestSucceeded;",
+							"",
+							"let shouldContinue = requestSucceeded;",
+							"if (shouldContinue) {",
+							"    // Validate response duration",
+							"    eval(globals.validateResponseTime)(requestNames.create_transfer);",
+							"}",
+							"",
+							"if (shouldContinue) {",
+							"    postman.setNextRequest(postman.getEnvironmentVariable(\"requestAfterCreateTransfer\"));",
+							"} else {",
+							"    postman.setNextRequest(requestNames.exit);",
+							"}"
+						]
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					},
+					{
+						"key": "Authorization",
+						"value": "{{jwtToken}}"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n\t\"To\": \"{{userToTransferToEmail}}\"\n}"
+				},
+				"url": {
+					"raw": "{{baseUrl}}/certificates/{{certificateId}}/transfers",
+					"host": [
+						"{{baseUrl}}"
+					],
+					"path": [
+						"certificates",
+						"{{certificateId}}",
+						"transfers"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Select second user",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"id": "0afa9313-7216-47f0-8b46-ad2f3efa4bd8",
+						"type": "text/javascript",
+						"exec": [
+							"const requestNames = JSON.parse(postman.getEnvironmentVariable(\"requestNames\"));",
+							"postman.setEnvironmentVariable(\"requestJustSent\", requestNames.select_second_user);",
+							"",
+							"const response = JSON.parse(responseBody)",
+							"",
+							"const requestSucceeded = (response.error.code === 0);",
+							"tests[`${requestNames.select_second_user} succeeded`] = requestSucceeded;",
+							"",
+							"let shouldContinue = requestSucceeded;",
+							"if (requestSucceeded) {",
+							"    // Validate response duration",
+							"    eval(globals.validateResponseTime)(requestNames.select_second_user);",
+							"",
+							"    if (response.users.length < 2) {",
+							"        shouldContinue = false;",
+							"        ",
+							"        // We just do this to make it easy to identify the problem in the postman report",
+							"        tests[`${requestNames.select_second_user} could not find 2 users`] = false;",
+							"    } else {",
+							"        postman.setEnvironmentVariable(\"secondUser\", JSON.stringify(response.users[1]));",
+							"    }",
+							"}",
+							"",
+							"if (shouldContinue) {",
+							"    postman.setNextRequest(postman.getEnvironmentVariable(\"requestAfterSelectSecondUser\"));",
+							"} else {",
+							"    postman.setNextRequest(requestNames.exit);",
+							"}"
+						]
+					}
+				}
+			],
+			"request": {
+				"method": "GET",
+				"header": [],
+				"body": {},
+				"url": {
+					"raw": "{{baseUrl}}/users",
+					"host": [
+						"{{baseUrl}}"
+					],
+					"path": [
+						"users"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Set second user users id",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"id": "199c6977-6b8a-479d-9416-7f7d5681f059",
+						"type": "text/javascript",
+						"exec": [
+							"const requestNames = JSON.parse(postman.getEnvironmentVariable(\"requestNames\"));",
+							"postman.setEnvironmentVariable(\"requestJustSent\", requestNames.set_second_user_as_user_to_use);",
+							"",
+							"const secondUser = JSON.parse(postman.getEnvironmentVariable(\"secondUser\"));",
+							"",
+							"postman.setEnvironmentVariable(\"userId\", secondUser.id);",
+							"postman.setEnvironmentVariable(\"emailAddress\", secondUser.email);",
+							"",
+							"postman.setNextRequest(postman.getEnvironmentVariable(\"requestAfterSetSecondUserUserId\"));"
+						]
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {},
+				"url": {
+					"raw": "https://postman-echo.com/post",
+					"protocol": "https",
+					"host": [
+						"postman-echo",
+						"com"
+					],
+					"path": [
+						"post"
+					]
+				},
+				"description": "We are just setting which user id / email / name to use for the subsequent request; as the first users' id / email / name"
+			},
+			"response": []
+		},
+		{
+			"name": "Accept transfer",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"id": "253f66fc-d606-4081-9a4f-9334cb1375c4",
+						"type": "text/javascript",
+						"exec": [
+							"const requestNames = JSON.parse(postman.getEnvironmentVariable(\"requestNames\"));",
+							"postman.setEnvironmentVariable(\"requestJustSent\", requestNames.accept_transfer);",
+							"",
+							"const response = JSON.parse(responseBody)",
+							"",
+							"const requestSucceeded = (response.error.code === 0);",
+							"tests[`${requestNames.accept_transfer} succeeded`] = requestSucceeded;",
+							"",
+							"let shouldContinue = requestSucceeded;",
+							"if (shouldContinue) {",
+							"    // Validate response duration",
+							"    eval(globals.validateResponseTime)(requestNames.accept_transfer);",
+							"}",
+							"",
+							"if (shouldContinue) {",
+							"    postman.setNextRequest(postman.getEnvironmentVariable(\"requestAfterAcceptTransfer\"));",
+							"} else {",
+							"    postman.setNextRequest(requestNames.exit);",
+							"}"
+						]
+					}
+				}
+			],
+			"request": {
+				"method": "PUT",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					},
+					{
+						"key": "Authorization",
+						"value": "{{jwtToken}}"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n}"
+				},
+				"url": {
+					"raw": "{{baseUrl}}/certificates/{{certificateId}}/transfers",
+					"host": [
+						"{{baseUrl}}"
+					],
+					"path": [
+						"certificates",
+						"{{certificateId}}",
+						"transfers"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Delete certificate",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"id": "1bdb0832-1360-4d9e-8ed4-f32c5aeef4d9",
+						"type": "text/javascript",
+						"exec": [
+							"const requestNames = JSON.parse(postman.getEnvironmentVariable(\"requestNames\"));",
+							"postman.setEnvironmentVariable(\"requestJustSent\", requestNames.delete_certificate);",
+							"",
+							"const response = JSON.parse(responseBody)",
+							"",
+							"const requestSucceeded = (response.error.code === 0);",
+							"tests[`${requestNames.delete_certificate} succeeded`] = requestSucceeded;",
+							"",
+							"let shouldContinue = requestSucceeded;",
+							"if (shouldContinue) {",
+							"    // Validate response duration",
+							"    eval(globals.validateResponseTime)(requestNames.delete_certificate);",
+							"}",
+							"",
+							"if (shouldContinue) {",
+							"    postman.setNextRequest(postman.getEnvironmentVariable(\"requestAfterDeleteCertificate\"));",
+							"} else {",
+							"    postman.setNextRequest(requestNames.exit);",
+							"}"
+						]
+					}
+				}
+			],
+			"request": {
+				"method": "DELETE",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					},
+					{
+						"key": "Authorization",
+						"value": "{{jwtToken}}"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n}"
+				},
+				"url": {
+					"raw": "{{baseUrl}}/certificates/{{certificateId}}",
+					"host": [
+						"{{baseUrl}}"
+					],
+					"path": [
+						"certificates",
+						"{{certificateId}}"
+					]
+				}
+			},
+			"response": []
+		}
+	]
+}

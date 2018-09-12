@@ -11,5 +11,9 @@ const (
 )
 	
 func NewDateStringTimestamp() DateString {
-	return DateString(time.Now().Format(dateStringFormat))
+	return NewDateStringFromTime(time.Now())
+}
+
+func NewDateStringFromTime(t time.Time) DateString {
+	return DateString(t.Format(dateStringFormat))
 }

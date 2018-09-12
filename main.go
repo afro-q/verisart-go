@@ -53,7 +53,7 @@ func main() {
 	router.HandleFunc("/users/{userId}/token", userHttpHandlers.GenerateToken).Methods(coreTypes.HTTP_GET)
 
 	// Authentication onwards
-	userSubRoutes := router.PathPrefix("/users/{userId}/certificats").Subrouter()
+	userSubRoutes := router.PathPrefix("/users/{userId}/certificates").Subrouter()
 	userSubRoutes.Use(middleware.Authentication)
 	userSubRoutes.HandleFunc("/", certifcateHttpHandlers.LoadCertificatesForUser).Methods(coreTypes.HTTP_GET) // Load all certificates for user
 

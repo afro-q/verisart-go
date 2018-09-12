@@ -1,11 +1,16 @@
 package types
 
+import (
+	"time"
+)
+
 type IsoTimeString string
 
 func GenerateTimestamp() IsoTimeString {
-	return IsoTimeString("TODO")
+	return IsoTimeString(time.Now().Format(time.RFC3339))
 }
 
 func (its IsoTimeString) ToDateString() DateString {
-	return DateString("TODO")
+	dateFromIsoTimeString, _ := time.Parse(time.RFC3339, string(its))
+	return NewDateStringFromTime(dateFromIsoTimeString)
 }

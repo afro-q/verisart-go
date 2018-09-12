@@ -1,13 +1,13 @@
-FROM golang:1.10.4 as build
+FROM golang:1.11.0-stretch as build
 
-WORKDIR $GOPATH/src/github.com/elithrar/vgo-docker-example
+WORKDIR $GOPATH/src/github.com/quinlanmorake/verisart-go
 COPY . .
 
 RUN go version && go get -u -v golang.org/x/vgo
-RUN vgo install ./...
+RUN CC=gcc vgo install ./...
 
 FROM gcr.io/distroless/base
-COPY --from=build /go/bin/vgo-docker-example /
-ENV PORT=8080
-EXPOSE 8080
-CMD ["/vgo-docker-example"]
+COPY --from=build /go/bin/verisart-go /
+COPY app.config /
+  
+CMD ["/verisart-go"]
